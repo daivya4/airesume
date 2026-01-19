@@ -96,3 +96,7 @@ The project is deployed and accessible here:
 
 This project is for educational and portfolio purposes.  
 You may modify and extend it as needed.
+
+---
+
+Created With ❤️ by Daivya.
