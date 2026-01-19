@@ -68,7 +68,7 @@ export default function Home() {
   };
 
   return <main className="bg-[url('/images/bg-main.svg')] bg-cover">
-    <Navbar />
+    <Navbar showSignOut={true} />
 
     <section className="main-section">
       <div className="page-heading py-16">
