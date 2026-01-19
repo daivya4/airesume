@@ -176,25 +176,7 @@ export const usePuterStore = create<PuterStore>((set, get) => {
 
         try {
             await puter.auth.signIn();
-            // After sign in, check auth status
-            const isSignedIn = await puter.auth.isSignedIn();
-            if (isSignedIn) {
-                const user = await puter.auth.getUser();
-                set({
-                    auth: {
-                        user,
-                        isAuthenticated: true,
-                        signIn: get().auth.signIn,
-                        signOut: get().auth.signOut,
-                        refreshUser: get().auth.refreshUser,
-                        checkAuthStatus: get().auth.checkAuthStatus,
-                        getUser: () => user,
-                    },
-                    isLoading: false,
-                });
-            } else {
-                set({ isLoading: false });
-            }
+            await checkAuthStatus();
         } catch (err) {
             const msg = err instanceof Error ? err.message : "Sign in failed";
             setError(msg);
@@ -368,7 +350,7 @@ export const usePuterStore = create<PuterStore>((set, get) => {
                     ],
                 },
             ],
-            { model: "claude-3-7-sonnet" }
+            { model: "gpt-4o-mini" }
         ) as Promise<AIResponse | undefined>;
     };
 
@@ -405,7 +387,16 @@ export const usePuterStore = create<PuterStore>((set, get) => {
             setError("Puter.js not available");
             return;
         }
-        return puter.kv.delete(key);
+        // Puter KV might not have delete, try del or set to null
+        const kvAny = puter.kv as any;
+        if (typeof kvAny.del === 'function') {
+            return kvAny.del(key);
+        } else if (typeof kvAny.delete === 'function') {
+            return kvAny.delete(key);
+        } else {
+            // Fallback: set to empty string
+            return puter.kv.set(key, '');
+        }
     };
 
     const listKV = async (pattern: string, returnValues?: boolean) => {

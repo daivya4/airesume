@@ -23,15 +23,29 @@ const Upload = () => {
 
         setStatusText('Uploading the file...');
         const uploadedFile = await fs.upload([file]);
-        if(!uploadedFile) return setStatusText('Error: Failed to upload file');
+        if(!uploadedFile) {
+            setStatusText('Error: Failed to upload file');
+            setIsProcessing(false);
+            return;
+        }
 
         setStatusText('Converting to image...');
         const imageFile = await convertPdfToImage(file);
-        if(!imageFile.file) return setStatusText('Error: Failed to convert PDF to image');
+        if(!imageFile.file) {
+            const errorMsg = imageFile.error || 'Failed to convert PDF to image';
+            console.error('PDF conversion failed:', errorMsg);
+            setStatusText(`Error: ${errorMsg}`);
+            setIsProcessing(false);
+            return;
+        }
 
         setStatusText('Uploading the image...');
         const uploadedImage = await fs.upload([imageFile.file]);
-        if(!uploadedImage) return setStatusText('Error: Failed to upload image');
+        if(!uploadedImage) {
+            setStatusText('Error: Failed to upload image');
+            setIsProcessing(false);
+            return;
+        }
 
         setStatusText('Preparing data...');
         const uuid = generateUUID();
@@ -49,8 +63,12 @@ const Upload = () => {
         const feedback = await ai.feedback(
             uploadedFile.path,
             prepareInstructions({ jobTitle, jobDescription })
-        )
-        if (!feedback) return setStatusText('Error: Failed to analyze resume');
+        );
+        if (!feedback) {
+            setStatusText('Error: Failed to analyze resume');
+            setIsProcessing(false);
+            return;
+        }
 
         const feedbackText = typeof feedback.message.content === 'string'
             ? feedback.message.content
@@ -65,15 +83,17 @@ const Upload = () => {
 
     const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
         e.preventDefault();
-        const form = e.currentTarget.closest('form');
-        if(!form) return;
-        const formData = new FormData(form);
+        
+        if(!file) {
+            setStatusText('Error: Please select a PDF file to upload');
+            return;
+        }
+
+        const formData = new FormData(e.currentTarget);
 
         const companyName = formData.get('company-name') as string;
         const jobTitle = formData.get('job-title') as string;
         const jobDescription = formData.get('job-description') as string;
-
-        if(!file) return;
 
         handleAnalyze({ companyName, jobTitle, jobDescription, file });
     }

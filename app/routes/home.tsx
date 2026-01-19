@@ -13,7 +13,7 @@ export function meta({}: Route.MetaArgs) {
 }
 
 export default function Home() {
-  const { auth, kv } = usePuterStore();
+  const { auth, kv, fs } = usePuterStore();
   const navigate = useNavigate();
   const [resumes, setResumes] = useState<Resume[]>([]);
   const [loadingResumes, setLoadingResumes] = useState(false);
@@ -39,6 +39,34 @@ export default function Home() {
     loadResumes()
   }, []);
 
+  const handleDelete = async (id: string, resumePath: string, imagePath: string) => {
+    try {
+      console.log('Deleting resume:', { id, resumePath, imagePath });
+      
+      const kvDeleted = await kv.delete(`resume:${id}`);
+      console.log('KV delete result:', kvDeleted);
+      
+      try {
+        await fs.delete(resumePath);
+        console.log('Resume file deleted');
+      } catch (err) {
+        console.warn('Failed to delete resume file:', err);
+      }
+      
+      try {
+        await fs.delete(imagePath);
+        console.log('Image file deleted');
+      } catch (err) {
+        console.warn('Failed to delete image file:', err);
+      }
+      
+      setResumes(resumes.filter(r => r.id !== id));
+    } catch (error) {
+      console.error('Failed to delete resume:', error);
+      alert('Failed to delete resume. Please try again.');
+    }
+  };
+
   return <main className="bg-[url('/images/bg-main.svg')] bg-cover">
     <Navbar />
 
@@ -60,7 +88,7 @@ export default function Home() {
       {!loadingResumes && resumes.length > 0 && (
         <div className="resumes-section">
           {resumes.map((resume) => (
-              <ResumeCard key={resume.id} resume={resume} />
+              <ResumeCard key={resume.id} resume={resume} onDelete={handleDelete} />
           ))}
         </div>
       )}

@@ -3,9 +3,19 @@ import ScoreCircle from "~/components/ScoreCircle";
 import {useEffect, useState} from "react";
 import {usePuterStore} from "~/lib/puter";
 
-const ResumeCard = ({ resume: { id, companyName, jobTitle, feedback, imagePath } }: { resume: Resume }) => {
+const ResumeCard = ({ resume, onDelete }: { resume: Resume; onDelete: (id: string, resumePath: string, imagePath: string) => void }) => {
+    const { id, companyName, jobTitle, feedback, imagePath, resumePath } = resume;
     const { fs } = usePuterStore();
     const [resumeUrl, setResumeUrl] = useState('');
+    const [isDeleting, setIsDeleting] = useState(false);
+
+    const handleDelete = async (e: React.MouseEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (!confirm('Are you sure you want to delete this resume?')) return;
+        setIsDeleting(true);
+        await onDelete(id, resumePath, imagePath);
+    };
 
     useEffect(() => {
         const loadResume = async () => {
@@ -19,14 +29,24 @@ const ResumeCard = ({ resume: { id, companyName, jobTitle, feedback, imagePath }
     }, [imagePath]);
 
     return (
-        <Link to={`/resume/${id}`} className="resume-card animate-in fade-in duration-1000">
+        <Link to={`/resume/${id}`} className="resume-card animate-in fade-in duration-1000 relative group">
+            <button
+                onClick={handleDelete}
+                disabled={isDeleting}
+                className="absolute top-4 right-4 z-10 bg-red-500 hover:bg-red-600 text-white rounded-full p-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 disabled:opacity-50"
+                title="Delete resume"
+            >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+            </button>
             <div className="resume-card-header">
                 <div className="flex flex-col gap-2">
-                    {companyName && <h2 className="text-black! font-bold wrap-break-word">{companyName}</h2>}
-                    {jobTitle && <h3 className="text-lg wrap-break-word text-gray-500">{jobTitle}</h3>}
-                    {!companyName && !jobTitle && <h2 className="text-black! font-bold">Resume</h2>}
+                    {companyName && <h2 className="!text-black font-bold break-words">{companyName}</h2>}
+                    {jobTitle && <h3 className="text-lg break-words text-gray-500">{jobTitle}</h3>}
+                    {!companyName && !jobTitle && <h2 className="!text-black font-bold">Resume</h2>}
                 </div>
-                <div className="shrink-0">
+                <div className="flex-shrink-0">
                     <ScoreCircle score={feedback.overallScore} />
                 </div>
             </div>
@@ -36,7 +56,7 @@ const ResumeCard = ({ resume: { id, companyName, jobTitle, feedback, imagePath }
                         <img
                             src={resumeUrl}
                             alt="resume"
-                            className="w-full h-87.5 max-sm:h-50 object-cover object-top"
+                            className="w-full h-[350px] max-sm:h-[200px] object-cover object-top"
                         />
                     </div>
                 </div>
